@@ -1,1 +1,10 @@
-This is the source code for kaggle click through rate prediction problem.
+This is the source code for kaggle driver telematic analysis problem.
+
+Strategy :
+
+1. Create difference vector of each trip.
+2. Upsample to a common length
+3. Take fourier transform.
+4. Assume a gaussian generative model and calculate the probability of occurence.
+
+
