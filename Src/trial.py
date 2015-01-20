@@ -26,4 +26,17 @@ def parsetrip(driver,trip):
 	f.close();
 	return trip_list;
 
+	def normalize_trip_list(trip_list):
+	norm_trip_list = [];
+	num_trips = len(trip_list);
+	max_length = 0;
+	for i in range(num_trips):
+		curr_len = len(trip_list[i]);
+		if (curr_len > max_length):
+			max_length = curr_len;
+
+	for j in range(num_trips):
+		norm_trip_list[j] = scipy.signal.resample(trip_list[j],max_length);
+	return norm_trip_list;
+
 #this is a comment
