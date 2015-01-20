@@ -1,14 +1,5 @@
 import csv
-f = open("train","r")
 
-csvreader1 = csv.reader(f)
-for i in range(3):
-	print 
-# A baseline is just to compute the fraction of times a particular ad was clicked
-numlines = 0;
-for lines in f:
-	numlines +=1
-print numlines
 
 def parsetrip(driver,trip):
 	s = '../../Data/drivers/' + str(driver) + '/' + str(trip) +'.csv';
@@ -26,4 +17,22 @@ def parsetrip(driver,trip):
 	f.close();
 	return trip_list;
 
-#this is a comment
+
+def parsedriver(driver):
+	driver_list = [];
+	for i in range(200):
+		a = parsetrip(driver,i+1);
+		driver_list.append(a);
+	return driver_list;
+
+
+
+
+
+if __name__ == "__main__":
+
+	driver = parsedriver(1);
+	print len(driver);
+	for i in range(len(driver)):
+		for j in range(10):
+			print driver[i][j], ' ',
