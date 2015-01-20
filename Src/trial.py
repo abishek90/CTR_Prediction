@@ -28,6 +28,10 @@ def parsetrip(driver,trip):
 
 # This is an additional comment
 
+<<<<<<< Updated upstream
 # ABISHEK11
+=======
+# ABISHEK10
+>>>>>>> Stashed changes
 
 #this is a comment
