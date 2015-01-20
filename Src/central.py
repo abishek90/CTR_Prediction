@@ -4,6 +4,7 @@ import scipy
 from scipy import signal, misc
 import matplotlib.pyplot as plt
 
+#Parses the particulat trip of the particular driver from the respective folder
 def parsetrip(driver,trip):
 	s = '../../Data/drivers/' + str(driver) + '/' + str(trip) +'.csv';
 	f = open(s,'r');
@@ -20,7 +21,7 @@ def parsetrip(driver,trip):
 	f.close();
 	return trip_list;
 
-
+#parses a driver
 def parsedriver(driver):
 	driver_list = [];
 	for i in range(200):
@@ -52,7 +53,7 @@ def normalize_trip_list(trip_list):
 			max_length = curr_len;
 
 	for j in range(num_trips):
-		norm_trip_list[j] = scipy.signal.resample(trip_list[j],max_length);
+		norm_trip_list.append( scipy.signal.resample(trip_list[j],max_length));
 	return norm_trip_list;
 
 # This function computes the Fourier Transform of each of the rows.
