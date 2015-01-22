@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt
 def compute_diff(trip_list):
 	num_trips = len(trip_list);
 	trip_list_diff = [];
-	for i in range(num_trips):
-		curr_trip = trip_list[i];
-		trip_len = len(curr_trip);
-		for j in range(trip_len-1):
-			trip_list_diff[i][j] = trip_list[i][j] - trip_list[i][j-1];
-	return trip_list_diff;
+    for i in range(len(trip_list)):
+    	curr_trip = trip_list[i];
+    	curr_trip = np.diff(curr_trip);
+    	curr_trip = np.diff(curr_trip);
+    	trip_list_diff.append(curr_trip);
+    return trip_list_diff;
 
 
 # This function outputs a list of arrays with all arrays being of the same size
