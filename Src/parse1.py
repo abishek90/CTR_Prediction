@@ -1,5 +1,8 @@
 import csv
 import random
+import cmath
+import numpy as np
+import matplotlib.pyplot as plt
 
 valid_list = [];
 
@@ -44,6 +47,21 @@ def valid_drivers():
 	return valid_list;
 
 
+def smooth_trip(trip):
+	speed = np.diff(trip);
+	for i in range(len(speed)-1):
+		temp = cmath.polar(speed[i+1] - speed[i]);
+		if temp[0] > 20:
+			t2 = speed[i+1];
+			speed[i+1] = speed[i];
+			for j in range(i+2,len(trip)):
+				trip[j] = trip[j-1] + speed[j-1];
+
+
+
+
+
+
 #function to create a test set, where num trips from driver 'driver' is present and (total - num) trips of random drivers are added at the end.
 def createteset(driver, num,total):
 	main_list =  parsedriver(driver);
@@ -65,8 +83,13 @@ def createteset(driver, num,total):
 if __name__ == "__main__":
 
 	valid_list = valid_drivers();
-	trip_list = createteset(1,6,20);
-	for i  in range(len(trip_list)):
-		print trip_list[i][0:10];
+	trip = parsetrip(1,120);
+	smooth_trip(trip);
+	acc = np.diff(np.diff(trip));
+	for i in range(len(acc)):
+		t = cmath.polar(acc[i]);
+		acc[i] = t[0];
+	plt.plot(acc);
+	plt.savefig('testtrip.png');
 
 
