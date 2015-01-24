@@ -106,6 +106,31 @@ def createteset(driver, num,total):
 		trip_list.append(trip);
 	return trip_list;
 
+#function to find average acceleration before and after a stop and the number of stops
+def stopping_param(trip):
+	length = len(trip);
+	stop_par = [];
+	speed = np.diff(trip);
+	acc = np.diff(speed);
+	avg_acc = 0;
+	avg_dcc = 0;
+	count = 0;
+	for i in range(length - 6):
+		if cmath.polar(speed[i])[0] == 0 and i>=4:
+			s = (cmath.polar(acc[i-1])[0]  +  cmath.polar(acc[i-2])[0]  +  cmath.polar(acc[i-3])[0]  +  cmath.polar(acc[i-4])[0] )/4;
+			d = (cmath.polar(acc[i])[0]  +  cmath.polar(acc[i+1])[0]  +  cmath.polar(acc[i+2])[0]  +  cmath.polar(acc[i+3])[0] )/4;
+			avg_acc = avg_acc + d;
+			avg_dcc = avg_dcc + s;
+			count = count + 1;
+	stop_par.append(count);
+	stop_par.append(avg_acc/count);
+	stop_par.append(avg_dcc/count);
+	return stop_par;
+
+
+
+
+
 
 
 
@@ -121,7 +146,7 @@ if __name__ == "__main__":
 		acc[i] = t[0];
 	turn_par = num_turns(trip);
 	print turn_par;
-	plt.plot(acc);
-	plt.savefig('testtrip.png');
+	stop_par = stopping_param(trip);
+	print stop_par,len(trip);
 
 
