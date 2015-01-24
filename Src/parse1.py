@@ -82,9 +82,12 @@ def num_turns(trip):
 		else:
 			i = i+1;
 	turn_par = [];
-	turn_par.append(c_l);
-	turn_par.append(c_r);
-	turn_par.append(avg_speed/(c_l+c_r));
+	turn_par.append(float(c_l) );
+	turn_par.append(float(c_r) );
+	if c_l + c_r > 0:
+		turn_par.append(float(avg_speed/(c_l+c_r)) );
+	else:
+		turn_par.append(0);
 	return turn_par;
 
 
@@ -122,10 +125,52 @@ def stopping_param(trip):
 			avg_acc = avg_acc + d;
 			avg_dcc = avg_dcc + s;
 			count = count + 1;
-	stop_par.append(count);
-	stop_par.append(avg_acc/count);
-	stop_par.append(avg_dcc/count);
+	stop_par.append(float(count) );
+	if count > 0:
+		stop_par.append(float(avg_acc/count) );
+		stop_par.append(float(avg_dcc/count) );
+	else:
+		stop_par.append(0 );
+		stop_par.append(0);
 	return stop_par;
+
+#function to return normalised parameters for regression for a given trip-list
+def regression_parameters(trip_list):
+	num = len(trip_list);
+	features_list = [];
+	for i in range(num):
+		curr_trip = trip_list[i];
+		smooth_trip(curr_trip);
+		feature = [];
+		length = len(curr_trip);
+		feature.append(float(length) );
+		speed = np.diff(curr_trip);
+		acc = np.diff(speed);
+		speed = np.absolute(speed);
+		acc = np.absolute(acc);
+		feature.append(float(np.mean(speed) ));
+		feature.append(float(np.mean(acc) ));
+		feature.append(float(np.std(speed)) );
+		feature.append(float( np.std(acc)));
+		turnpar = num_turns(curr_trip);
+		stoppar = stopping_param(curr_trip);
+		feature.append(turnpar[0]/length);
+		feature.append(turnpar[1]/length);
+		feature.append(turnpar[2]);
+		feature.append(stoppar[0]/length);
+		feature.append(stoppar[1]);
+		feature.append(stoppar[2]);
+		features_list.append(feature);
+	features_list = np.array(features_list);
+	for i in range(len(features_list[0])):
+		avg = np.mean(features_list[:,i]);
+		stdev = np.std(features_list[:,i]);
+		if stdev != 0:
+			features_list[:,i] = (features_list[:,i] - avg)/stdev;
+
+	return features_list;
+
+
 
 
 
@@ -148,5 +193,7 @@ if __name__ == "__main__":
 	print turn_par;
 	stop_par = stopping_param(trip);
 	print stop_par,len(trip);
+	features_list = regression_parameters(parsedriver(1));
+	print features_list[1:10,:];
 
 
