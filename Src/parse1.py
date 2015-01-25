@@ -4,6 +4,7 @@ import cmath
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from sklearn import linear_model
 
 valid_list = [];
 
@@ -170,6 +171,29 @@ def regression_parameters(trip_list):
 
 	return features_list;
 
+def logit_predict(driver):
+	num = 190;
+	total = 200;
+	train_list = createteset(driver,num,total);
+	train_X = regression_parameters(train_list);
+	train_Y = [];
+	for i in range(total):
+		if(i < num):
+			train_Y.append(float(1));
+		else:
+			train_Y.append(float(0));
+	logreg = linear_model.LogisticRegression(C=1e5);
+	logreg.fit(train_X,train_Y);
+	main_list = parsedriver(driver);
+	test_X = regression_parameters(main_list);
+	test_Y = logreg.predict_proba(test_X);
+	return test_Y;
+
+
+
+
+
+
 
 
 
@@ -181,19 +205,18 @@ def regression_parameters(trip_list):
 
 #main method for testing the code
 if __name__ == "__main__":
-
 	valid_list = valid_drivers();
-	trip = parsetrip(1,120);
-	smooth_trip(trip);
-	acc = np.diff(np.diff(trip));
-	for i in range(len(acc)):
-		t = cmath.polar(acc[i]);
-		acc[i] = t[0];
-	turn_par = num_turns(trip);
-	print turn_par;
-	stop_par = stopping_param(trip);
-	print stop_par,len(trip);
-	features_list = regression_parameters(parsedriver(1));
-	print features_list[1:10,:];
+	fo = open("foo.csv",'w');
+	s = 'driver_trip,prob\n';
+	fo.write(s);
+	length = 4;
+	for i in range(length):
+		test = logit_predict(valid_list[i]);
+		for j in range(200):
+			s = str(valid_list[i])+'_'+str(j+1)+','+str(test[j,1])+'\n';
+			fo.write(s);
+	fo.close();
+
+	
 
 
