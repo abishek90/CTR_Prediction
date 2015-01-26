@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 from sklearn import linear_model
+from sklearn.svm import SVR
 
 valid_list = [];
 
@@ -182,11 +183,29 @@ def logit_predict(driver):
 			train_Y.append(float(1));
 		else:
 			train_Y.append(float(0));
-	logreg = linear_model.LogisticRegression(C=1e5);
+	logreg = linear_model.LogisticRegression(C=1e1);
 	logreg.fit(train_X,train_Y);
 	main_list = parsedriver(driver);
 	test_X = regression_parameters(main_list);
 	test_Y = logreg.predict_proba(test_X);
+	return test_Y;
+
+def svm_predict(driver):
+	num = 190;
+	total = 200;
+	train_list = createteset(driver,num,total);
+	train_X = regression_parameters(train_list);
+	train_Y = [];
+	for i in range(total):
+		if(i < num):
+			train_Y.append(float(1));
+		else:
+			train_Y.append(float(0));
+	clf = SVR(C=1.0, epsilon=0.2);
+	clf.fit(train_X,train_Y);
+	main_list = parsedriver(driver);
+	test_X = regression_parameters(main_list);
+	test_Y = clf.predict(test_X);
 	return test_Y;
 
 
@@ -206,15 +225,23 @@ def logit_predict(driver):
 #main method for testing the code
 if __name__ == "__main__":
 	valid_list = valid_drivers();
-	fo = open("foo.csv",'w');
+	fo = open("foo1.csv",'w');
 	s = 'driver_trip,prob\n';
 	fo.write(s);
-	length = 4;
+	length = len(valid_list);
 	for i in range(length):
-		test = logit_predict(valid_list[i]);
+		test = svm_predict(valid_list[i]);
 		for j in range(200):
-			s = str(valid_list[i])+'_'+str(j+1)+','+str(test[j,1])+'\n';
+			# if test[j,1] < 0.8 and test[j,1] > 0.25:
+			# 	f = test[j,1] - 0.25;
+			# elif test[j,1] > 0.96:
+			# 	f = 1;
+			# else:
+			# 	f = test[j,1];
+			s = str(valid_list[i])+'_'+str(j+1)+','+str(min(1,test[j]) )+'\n';
 			fo.write(s);
+		if i%100 == 0:
+			print i+1;
 	fo.close();
 
 	
