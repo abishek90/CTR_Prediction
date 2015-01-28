@@ -6,8 +6,10 @@ import matplotlib.pyplot as plt
 import math
 from sklearn import linear_model
 from sklearn.svm import SVR
+from sklearn import svm
 from sklearn import cross_validation
-from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingClassifier 
+from sklearn.ensemble import RandomForestClassifier
 
 
 valid_list = [];
@@ -188,26 +190,16 @@ def regression_parameters(trip_list):
 #does logistic regression on the chosen paramters
 def logit_predict(driver):
 	num = 1000;
-	total = 1100;
+	total = 1200;
 	train_list = createteset(driver,num,total);
 	train_X = regression_parameters(train_list);
 	train_Y = [];
 	for i in range(total):
 		if(i < num):
-			train_Y.append(float(1));
+			train_Y.append(float(1) );
 		else:
-			train_Y.append(float(0));
-	c = [1e-1 , 1 , 1e1 , 1e2 , 1e3 , 1e4 , 1e5];
-	maxi = 0;
-	position = 0;
-	for i in range(len(c)):
-		logreg = linear_model.LogisticRegression(C=c[i]);
-		scores = cross_validation.cross_val_score(logreg,train_X,train_Y,scoring='accuracy',cv = 5);
-		scores = np.mean(scores);
-		if maxi < scores:
-			maxi = scores;
-			position = i;
-	logreg = linear_model.LogisticRegression(C=c[position]);
+			train_Y.append(float(0) );
+	logreg = linear_model.LogisticRegression(C=1e4);
 	logreg.fit(train_X,train_Y);
 	main_list = parsedriver(driver);
 	test_X = regression_parameters(main_list);
@@ -217,27 +209,27 @@ def logit_predict(driver):
 #does svr on the chosen parameters
 def svm_predict(driver):
 	num = 1000;
-	total = 1100;
+	total = 1200;
 	train_list = createteset(driver,num,total);
 	train_X = regression_parameters(train_list);
 	train_Y = [];
 	for i in range(total):
 		if(i < num):
-			train_Y.append(float(1));
+			train_Y.append(float(1) );
 		else:
-			train_Y.append(float(0));
-	clf = SVR(C=1.0, epsilon=0.2);
+			train_Y.append(float(0) );
+	clf = svm.SVC(C=100, gamma=100, kernel='rbf', probability=True);
 	clf.fit(train_X,train_Y);
 	main_list = parsedriver(driver);
 	test_X = regression_parameters(main_list);
-	test_Y = clf.predict(test_X);
+	test_Y = clf.predict_proba(test_X);
 	return test_Y;
 
 
 #does svr on the chosen parameters
 def GBRT_predict(driver):
 	num = 1000;
-	total = 1100;
+	total = 1200;
 	train_list = createteset(driver,num,total);
 	train_X = regression_parameters(train_list);
 	train_Y = [];
@@ -246,12 +238,158 @@ def GBRT_predict(driver):
 			train_Y.append(float(1));
 		else:
 			train_Y.append(float(0));
-	clf = GradientBoostingClassifier(n_estimators = 1000 , learning_rate = 0.1 , max_depth = 3);
+	clf = GradientBoostingClassifier(n_estimators = 200 , learning_rate = 0.5 , max_depth = 3);
+	clf.fit(train_X,train_Y);
+	main_list = parsedriver(driver);
+	test_X = regression_parameters(main_list);
+	test_Y = clf.predict_proba(test_X);
+	print clf.classes_;
+	print clf.predict(test_X);
+	print test_Y;
+	return test_Y;
+
+# this turned out best for n_estimator = 50 (not much change in performance)
+def cross_validation_RF(driver):
+	num = 1000;
+	total = 1200;
+	number = [10 , 25 , 50 , 100 , 200 , 300 , 500];
+	points = [];
+	for i in range(len(number)):
+		clf = RandomForestClassifier(n_estimators = number[i]);
+		avg = 0;
+		for j in range(10):
+			train_list = createteset(driver,num,total);
+			train_X = regression_parameters(train_list);
+			train_Y = [];
+			for i in range(total):
+				if(i < num):
+					train_Y.append(float(1));
+				else:
+					train_Y.append(float(0));
+			scores = cross_validation.cross_val_score(clf,train_X,train_Y,scoring='accuracy',cv = 5);
+			avg = avg + scores.mean();
+		points.append(avg/10);
+
+	return points; 
+#gives the best results for C =  and gamma = 1500 , does not work at all
+def cross_validation_svm(driver):
+	num = 1000;
+	total = 1200;
+	number = [0.01, 0.1 , 1 , 10 , 100 , 1000, 10000];
+	gnumber = [0.1, 1 , 10, 20, 100 , 500, 1000, 1500];
+	points = [];
+	for i in range(len(gnumber)):
+		clf = svm.SVC(C=100, cache_size=200, class_weight=None, coef0=0.0, degree=3,gamma=gnumber[i], kernel='rbf', max_iter=-1, probability=False, random_state=None,shrinking=True, tol=0.001, verbose=False);
+		avg = 0;
+		for j in range(10):
+			train_list = createteset(driver,num,total);
+			train_X = regression_parameters(train_list);
+			train_Y = [];
+			for i in range(total):
+				if(i < num):
+					train_Y.append(float(1));
+				else:
+					train_Y.append(float(0));
+			scores = cross_validation.cross_val_score(clf,train_X,train_Y,cv = 5);
+			avg = avg + scores.mean();
+		points.append(avg/10);
+
+	return points; 
+#works best for c = 1e4
+def cross_validation_logistic(driver):
+	num = 1000;
+	total = 1200;
+	number = [0.01, 0.1 , 1, 10, 100, 1000, 10000];
+	points = [];
+	for i in range(len(number)):
+		logreg = linear_model.LogisticRegression(C=number[i]);
+		avg = 0;
+		for j in range(10):
+			train_list = createteset(driver,num,total);
+			train_X = regression_parameters(train_list);
+			train_Y = [];
+			for i in range(total):
+				if(i < num):
+					train_Y.append(float(1));
+				else:
+					train_Y.append(float(0));
+			scores = cross_validation.cross_val_score(logreg,train_X,train_Y,cv = 5);
+			avg = avg + scores.mean();
+		points.append(avg/10);
+
+	return points; 
+
+def RF_predict(driver):
+	num = 1000;
+	total = 1200;
+	train_list = createteset(driver,num,total);
+	train_X = regression_parameters(train_list);
+	train_Y = [];
+	for i in range(total):
+		if(i < num):
+			train_Y.append(float(1) );
+		else:
+			train_Y.append(float(0) );
+	clf = RandomForestClassifier(n_estimators = 50);
 	clf.fit(train_X,train_Y);
 	main_list = parsedriver(driver);
 	test_X = regression_parameters(main_list);
 	test_Y = clf.predict_proba(test_X);
 	return test_Y;
+
+def combination_RFlogit(driver):
+	num = 1000;
+	total = 1200;
+	train_list = createteset(driver,num,total);
+	train_X = regression_parameters(train_list);
+	train_Y = [];
+	for i in range(total):
+		if(i < num):
+			train_Y.append(float(1) );
+		else:
+			train_Y.append(float(0) );
+	clf1 = linear_model.LogisticRegression(C=1e4);
+	clf11 = linear_model.LogisticRegression(C=1e4);
+	clf2 = RandomForestClassifier(n_estimators = 50);
+	clf1.fit(train_X, train_Y);
+	clf2.fit(train_X, train_Y);
+	train_list2 = createteset(driver,num,total);
+	train_X2 = regression_parameters(train_list2);
+	train_Y2 = [];
+	for i in range(total):
+		if(i < num):
+			train_Y2.append(float(1) );
+		else:
+			train_Y2.append(float(0) );
+	test_Y1 = clf1.predict_proba(train_X2)[:,1];
+	test_Y2 = clf2.predict_proba(train_X2)[:,1];
+	trainf = np.column_stack( (test_Y1.transpose(), test_Y2.transpose() ) );
+	clf11.fit(trainf, train_Y2);
+	main_list = parsedriver(driver);
+	test_X = regression_parameters(main_list);
+	l1 = clf1.predict_proba(test_X)[:,1] 
+	l2 = clf2.predict_proba(test_X)[:,1]
+	testf = np.column_stack((l1.transpose(), l2.transpose() ) );
+	out = clf11.predict_proba(testf);
+	return out;
+
+
+
+
+def print_to_file(filename):
+	fo = open(filename,'w');
+	s = 'driver_trip,prob\n';
+	fo.write(s);
+	length = 1;
+	for i in range(length):
+	 	test = combination_RFlogit(valid_list[i]);
+	 	for j in range(200):
+	 		s = str(valid_list[i])+'_'+str(j+1)+','+str(test[j,1])+'\n';
+	 		fo.write(s);
+	 	if i%10 == 0:
+	 		print i+1;
+	fo.close();
+
 
 
 
@@ -270,18 +408,9 @@ def GBRT_predict(driver):
 #main method for testing the code
 if __name__ == "__main__":
 	valid_list = valid_drivers();
-	fo = open("foo2.csv",'w');
-	s = 'driver_trip,prob\n';
-	fo.write(s);
-	length = len(valid_list);
-	for i in range(length):
-	 	test = GBRT_predict(valid_list[i]);
-	 	for j in range(200):
-	 		s = str(valid_list[i])+'_'+str(j+1)+','+str(test[j,1] )+'\n';
-	 		fo.write(s);
-	 	if i%100 == 0:
-	 		print i+1;
-	fo.close();
+	print_to_file('foo_cv.csv')
+	#print cross_validation_RF(valid_list[11]);
+	
 	
 
 	
