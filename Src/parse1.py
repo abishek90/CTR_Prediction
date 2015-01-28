@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 import math
 from sklearn import linear_model
 from sklearn.svm import SVR
+from sklearn import cross_validation
+from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
+
 
 valid_list = [];
 
@@ -68,6 +71,7 @@ def num_turns(trip):
 	c_l = 0;
 	c_r = 0;
 	avg_speed = 0;
+	avg_acc = 0;
 	while i < length - 5:
 		c1 = trip[i+4] - trip[i+2];
 		c2 = trip[i+2] - trip[i];
@@ -80,6 +84,7 @@ def num_turns(trip):
 				c_r = c_r + 1;
 			temp = trip[i:i+4];
 			avg_speed = avg_speed + cmath.polar(np.mean(np.diff(temp)))[0];
+			avg_acc = avg_acc + np.absolute(np.mean(np.diff(np.diff(temp))));
 			i = i + 5;
 		else:
 			i = i+1;
@@ -88,7 +93,9 @@ def num_turns(trip):
 	turn_par.append(float(c_r) );
 	if c_l + c_r > 0:
 		turn_par.append(float(avg_speed/(c_l+c_r)) );
+		turn_par.append(float(avg_acc/(c_l+c_r)) );
 	else:
+		turn_par.append(0);
 		turn_par.append(0);
 	return turn_par;
 
@@ -101,7 +108,10 @@ def num_turns(trip):
 def createteset(driver, num,total):
 	main_list =  parsedriver(driver);
 	trip_list = [];
-	my_sample = random.sample(range(200), num);
+	if num <= 200:
+		my_sample = random.sample(range(200), num);
+	else:
+		my_sample =  np.random.randint(0,200, num);
 	for i in range(num):
 		trip_list.append(main_list[my_sample[i]]);
 	for i in range(total - num):
@@ -159,6 +169,7 @@ def regression_parameters(trip_list):
 		feature.append(turnpar[0]/length);
 		feature.append(turnpar[1]/length);
 		feature.append(turnpar[2]);
+		feature.append(turnpar[3]);
 		feature.append(stoppar[0]/length);
 		feature.append(stoppar[1]);
 		feature.append(stoppar[2]);
@@ -169,12 +180,15 @@ def regression_parameters(trip_list):
 		stdev = np.std(features_list[:,i]);
 		if stdev != 0:
 			features_list[:,i] = (features_list[:,i] - avg)/stdev;
+		else:
+			features_list[:,i] = (features_list[:,i] - avg);
 
 	return features_list;
 
+#does logistic regression on the chosen paramters
 def logit_predict(driver):
-	num = 190;
-	total = 200;
+	num = 1000;
+	total = 1100;
 	train_list = createteset(driver,num,total);
 	train_X = regression_parameters(train_list);
 	train_Y = [];
@@ -183,16 +197,27 @@ def logit_predict(driver):
 			train_Y.append(float(1));
 		else:
 			train_Y.append(float(0));
-	logreg = linear_model.LogisticRegression(C=1e1);
+	c = [1e-1 , 1 , 1e1 , 1e2 , 1e3 , 1e4 , 1e5];
+	maxi = 0;
+	position = 0;
+	for i in range(len(c)):
+		logreg = linear_model.LogisticRegression(C=c[i]);
+		scores = cross_validation.cross_val_score(logreg,train_X,train_Y,scoring='accuracy',cv = 5);
+		scores = np.mean(scores);
+		if maxi < scores:
+			maxi = scores;
+			position = i;
+	logreg = linear_model.LogisticRegression(C=c[position]);
 	logreg.fit(train_X,train_Y);
 	main_list = parsedriver(driver);
 	test_X = regression_parameters(main_list);
 	test_Y = logreg.predict_proba(test_X);
 	return test_Y;
 
+#does svr on the chosen parameters
 def svm_predict(driver):
-	num = 190;
-	total = 200;
+	num = 1000;
+	total = 1100;
 	train_list = createteset(driver,num,total);
 	train_X = regression_parameters(train_list);
 	train_Y = [];
@@ -206,6 +231,26 @@ def svm_predict(driver):
 	main_list = parsedriver(driver);
 	test_X = regression_parameters(main_list);
 	test_Y = clf.predict(test_X);
+	return test_Y;
+
+
+#does svr on the chosen parameters
+def GBRT_predict(driver):
+	num = 1000;
+	total = 1100;
+	train_list = createteset(driver,num,total);
+	train_X = regression_parameters(train_list);
+	train_Y = [];
+	for i in range(total):
+		if(i < num):
+			train_Y.append(float(1));
+		else:
+			train_Y.append(float(0));
+	clf = GradientBoostingClassifier(n_estimators = 1000 , learning_rate = 0.1 , max_depth = 3);
+	clf.fit(train_X,train_Y);
+	main_list = parsedriver(driver);
+	test_X = regression_parameters(main_list);
+	test_Y = clf.predict_proba(test_X);
 	return test_Y;
 
 
@@ -225,24 +270,19 @@ def svm_predict(driver):
 #main method for testing the code
 if __name__ == "__main__":
 	valid_list = valid_drivers();
-	fo = open("foo1.csv",'w');
+	fo = open("foo2.csv",'w');
 	s = 'driver_trip,prob\n';
 	fo.write(s);
 	length = len(valid_list);
 	for i in range(length):
-		test = svm_predict(valid_list[i]);
-		for j in range(200):
-			# if test[j,1] < 0.8 and test[j,1] > 0.25:
-			# 	f = test[j,1] - 0.25;
-			# elif test[j,1] > 0.96:
-			# 	f = 1;
-			# else:
-			# 	f = test[j,1];
-			s = str(valid_list[i])+'_'+str(j+1)+','+str(min(1,test[j]) )+'\n';
-			fo.write(s);
-		if i%100 == 0:
-			print i+1;
+	 	test = GBRT_predict(valid_list[i]);
+	 	for j in range(200):
+	 		s = str(valid_list[i])+'_'+str(j+1)+','+str(test[j,1] )+'\n';
+	 		fo.write(s);
+	 	if i%100 == 0:
+	 		print i+1;
 	fo.close();
+	
 
 	
 

@@ -7,4 +7,8 @@ Strategy :
 3. Take fourier transform.
 4. Assume a gaussian generative model and calculate the probability of occurence.
 
-
+Cross-Validation Strategy :
+1. Do k-fold cross validation from python libraries.
+2. GBRT, SVM, LOgistic regression and then forrest of classifiers
+3. Feature engineering
+4. Creating the training and test set is a challenge, assume that the models are resistant to a few outliers. 
